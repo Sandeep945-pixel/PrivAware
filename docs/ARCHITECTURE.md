@@ -4,7 +4,21 @@
 
 ![PrivAware research architecture connecting user roles, retrieved access rules, a masked Flan-T5 model, response validation, database access, and reinforcement learning](../assets/figures/privaware-research-architecture.png)
 
-*Research architecture supplied by the project team. The figure labels query generation as SQL; the checked-in implementation generates MongoDB filters and projections. Training and reinforcement-learning components shown here are outside the available source snapshot.*
+*Figure 2 from A Multi-Layered Privacy-Preserving Framework for Large Language Models in Healthcare. The figure labels query generation as SQL; the manuscript text and checked-in implementation use MongoDB. Training and reinforcement-learning components shown here are outside the available source snapshot.*
+
+## PrivAgent-RL architecture
+
+![PrivAgent-RL architecture: layered privacy enforcement, automated evaluation and reward assignment, and PPO refinement](../assets/figures/privagent-architecture.png)
+
+*Figure 2 from PrivAgent-RL: Agentic Privacy Enforcement and Reward Modeling for Policy-Aware Fine-Tuning in Healthcare.*
+
+The extension separates the workflow into three modules:
+
+1. **Response generation and privacy controls:** a role-tagged query passes through masking, generation, and response/database validation.
+2. **Evaluation and reward assignment:** a policy-aware evaluator considers the response against access rules, system instructions, and available ground-truth information.
+3. **Model refinement:** accumulated query-response-reward examples supply a PPO update loop.
+
+These modules describe the manuscript's agentic approach. The public source snapshot contains the earlier inference workflow; it does not include the evaluator agent, reward-buffer implementation, or PPO training loop.
 
 ## Available inference workflow
 

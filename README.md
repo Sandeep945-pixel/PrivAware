@@ -1,37 +1,59 @@
-# PrivAware
+# PrivAware & PrivAgent-RL
 
-**Role-aware information access for language-model applications.**
+**Role-aware language generation, layered privacy controls, and feedback-driven refinement.**
 
-PrivAware explores how access policies can influence both language generation and database-backed answers. The healthcare research prototype combines role-policy retrieval, token-level attention masking, a second model for response sanitization, and field filtering before database lookup.
+A healthcare question-answering system needs to consider both the question and the user's permission to access the answer. These two research studies examine that problem at different stages: **PrivAware** combines controls across generation and database retrieval; **PrivAgent-RL** extends the approach with an automated evaluator that supplies feedback for model refinement.
 
-[Related paper — ICISSP 2026](https://doi.org/10.5220/0014218400004061) · [Architecture](docs/ARCHITECTURE.md) · [Setup and artifacts](docs/SETUP.md) · [Research notes](docs/RESEARCH.md)
+This repository brings together the research narrative, original figures, and available PrivAware inference code.
 
-## The problem
+[Research papers](docs/RESEARCH.md) · [Architecture](docs/ARCHITECTURE.md) · [Setup](docs/SETUP.md) · [Citation](CITATION.bib)
 
-A natural-language interface to structured records must distinguish what a user asks from what that user is permitted to access. A plausible answer is not sufficient: the system also needs to constrain which fields it queries and which values it returns.
+## 1. PrivAware: privacy controls across the response pipeline
 
-PrivAware investigates these controls at several stages of a question-answering workflow. The repository includes demonstration policies for **Admin**, **Doctor**, and **Patient** roles. These are experimental policies, not a universal definition of clinical access rights.
+A model may produce a fluent answer while disclosing a field the user should not see. PrivAware investigates several points where access policies can guide the response: retrieving role-specific rules, masking input tokens associated with restricted fields, checking generated text, and filtering database projections before inserting retrieved values.
 
-## Methodology
+The research framework combines a fine-tuned Flan-T5 model, RAG-based policy retrieval, response validation, database-level access controls, and refinement through human feedback. Its demonstration roles are **Admin**, **Doctor**, and **Patient**.
 
-![PrivAware four-stage methodology: fine-tuning, policy retrieval and attention masking, response validation, and human-feedback reinforcement learning](assets/figures/privaware-methodology.png)
+![PrivAware methodology: fine-tuning, rule retrieval and attention masking, dual-layer validation, and human-feedback refinement](assets/figures/privaware-methodology.png)
 
-*Research methodology supplied by the project team. The figure includes training and human-feedback stages; their code and artifacts are not included in this repository.*
+*Figure 3 from A Multi-Layered Privacy-Preserving Framework for Large Language Models in Healthcare. Training and human-feedback components shown in the figure are not included in this code snapshot.*
 
-## Implementation overview
+## 2. PrivAgent-RL: automating the feedback step
 
-| Layer | Implementation |
+Human feedback provides a way to improve a model after it makes mistakes, but each response still needs review. PrivAgent-RL examines whether a policy-aware evaluator agent can perform that assessment and assign rewards for reinforcement learning.
+
+The evaluator considers access policies, system rules, and available reference information when assessing a response. Reward-annotated examples feed a Proximal Policy Optimization (PPO) loop. The research separates response generation, evaluation, and model refinement into distinct components.
+
+![Comparison of human-feedback RLHF and evaluator-agent feedback in PrivAgent-RL](assets/figures/privagent-feedback-comparison.png)
+
+*Figure 1 from PrivAgent-RL. The comparison illustrates the change in feedback source. The [architecture guide](docs/ARCHITECTURE.md#privagent-rl-architecture) shows the complete agentic workflow.*
+
+Together, the studies connect two questions: **how can access policies constrain an answer, and how can feedback improve future responses?** The second study builds on layered privacy enforcement by automating the evaluation stage.
+
+## Papers
+
+| Study | Authors, in paper order | Focus |
+| --- | --- | --- |
+| **A Multi-Layered Privacy-Preserving Framework for Large Language Models in Healthcare** | Sahithi Padidela, Sandeep Kalari, Vikas G. Ashok, Ravi Mukkamala | Layered privacy controls with human-feedback refinement |
+| **PrivAgent-RL: Agentic Privacy Enforcement and Reward Modeling for Policy-Aware Fine-Tuning in Healthcare** | Sahithi Padidela, Sandeep Kalari, Vikas Ashok, Ravi Mukkamala | Automated policy-aware evaluation and PPO refinement |
+
+See [research notes](docs/RESEARCH.md) for source details and the related ICISSP 2026 overview publication. Citation entries preserve the author order of each work.
+
+## Available implementation
+
+| Component | Included in this repository |
 | --- | --- |
-| Policy retrieval | MiniLM embeddings and FAISS retrieve candidate policy chunks; code looks for a matching role |
-| Mask construction | Exact matching and embedding similarity between input tokens and restricted field names produce a binary attention mask |
-| Local generation | A separately supplied fine-tuned sequence-to-sequence checkpoint generates an initial response |
-| Response sanitization | GPT-4 is prompted to remove restricted content and represent allowed database values as placeholders |
-| Database access | A generated query is filtered against allowed projection fields before execution |
-| Answer assembly | Returned values replace matching placeholders |
+| API and user context | FastAPI signup, login, and question endpoints |
+| Policy retrieval | MiniLM embeddings, FAISS index, and role-policy parsing |
+| Masked generation | Token-level attention-mask construction and a local sequence-to-sequence model loader |
+| Response validation | GPT-4 prompts for sanitization and query construction |
+| Database integration | MongoDB lookup, projection-key filtering, and placeholder replacement |
+| Training and evaluation | Checkpoint, fine-tuning/PPO code, datasets, and reproduction scripts are not included |
+| PrivAgent-RL extension | Research documentation and figures; evaluator-agent and training code are not included |
 
-The local generation call supplies an `attention_mask` through the Transformers API. The repository does not contain a custom attention implementation or establish that restricted information becomes inaccessible to all model computation. See [architecture and control boundaries](docs/ARCHITECTURE.md).
+The code supplies an `attention_mask` through the Transformers API. The figures describe the broader research design; they do not establish that every component or security property is implemented in this release. [Implementation details and control boundaries](docs/ARCHITECTURE.md).
 
-## Start here
+## Inspect the release
 
 ```bash
 git clone https://github.com/Sandeep945-pixel/PrivAware.git
@@ -39,39 +61,27 @@ cd PrivAware
 python scripts/check_artifacts.py
 ```
 
-Use Python 3.10 or later for the new artifact checker. It runs with the standard library, makes no network requests, and does not load models or deserialize the bundled pickle file.
+The checker uses Python 3.10+ and the standard library. It checks artifact presence without loading models, deserializing pickle files, or contacting external services.
 
-**This release is a research code snapshot, not a ready-to-run demo.** The required `new_fine_tuned_model/` checkpoint is not included. The checker reports missing local artifacts; it does not certify model compatibility, privacy protection, or runtime readiness.
-
-The [setup guide](docs/SETUP.md) identifies dependencies, configuration gaps, actual API routes, and what is needed to run a controlled synthetic experiment. Replacing the missing checkpoint with a generic base model would not reproduce PrivAware.
-
-## Research context
-
-PrivAware is discussed alongside BlockQwen in **Exploring Large Language Models for Trustworthy Use: Insights from Research and Development**, by Sandeep Kalari, Sahithi Padidela, Vikas Ashok, and Ravi Mukkamala, published at ICISSP 2026. [ODU publication record](https://digitalcommons.odu.edu/computerscience_fac_pubs/452/).
-
-Training code, a PPO/RLHF loop, evaluation datasets, and benchmark reproduction scripts are not included in this snapshot. Numerical results are not presented as verified measurements of this release. [Research and artifact status](docs/RESEARCH.md) explains the distinction.
+**The fine-tuned checkpoint is not included, so this snapshot is not a ready-to-run demo.** The [setup guide](docs/SETUP.md) covers dependencies, configuration gaps, and actual API routes.
 
 ## Repository guide
 
 | Path | Purpose |
 | --- | --- |
-| `main.py` | FastAPI application and router registration |
-| `api/` | Signup, login, and question endpoints |
-| `services/model_handle.py` | Policy retrieval, masking, generation, sanitization, query construction, and answer assembly |
-| `services/user_service.py` | User creation and authentication helpers |
-| `core/` | Configuration and token/password utilities |
-| `db/` | MongoDB collections |
-| `models/` | Request schemas |
-| `access_control_rules.md` | Demonstration role policies |
-| `vector_indexing.py` | Build the FAISS rule index and chunk mapping |
-| `scripts/check_artifacts.py` | Offline inspection of required artifact presence |
+| `api/`, `main.py` | FastAPI endpoints and application setup |
+| `services/model_handle.py` | Retrieval, masking, generation, validation, query construction, and answer assembly |
+| `services/user_service.py`, `core/`, `models/` | User helpers, configuration, token utilities, and request schemas |
+| `db/` | MongoDB integration |
+| `access_control_rules.md`, `vector_indexing.py` | Demonstration policies and index construction |
+| `assets/figures/` | Original research figures |
+| `docs/` | Architecture, research context, setup, and limitations |
+| `scripts/check_artifacts.py` | Offline artifact-presence check |
 
-## Scope and responsible use
+## Experimental scope
 
-Use synthetic records for experimentation. This snapshot has unresolved authorization, query-validation, policy-parsing, and logging issues documented in [release limitations](docs/LIMITATIONS.md). Do not connect it to real patient records or expose it as a public service in its current form.
+Use synthetic records. The available code has unresolved authorization, policy-parsing, query-validation, and logging issues described in [limitations](docs/LIMITATIONS.md). It should not be connected to real patient records or exposed as a public service in its current form.
 
-The workflow sends questions and intermediate responses to the configured OpenAI service and stores request/response information in MongoDB. Attention masking and model-based sanitization are research mechanisms, not a security or regulatory-compliance guarantee.
+Questions and intermediate responses are sent to the configured OpenAI service, and interaction data is stored in MongoDB. Model-based controls and reported experimental results do not constitute a security or regulatory-compliance guarantee.
 
-## Citation
-
-For the related publication, use [CITATION.bib](CITATION.bib). Its publication license does not automatically license this repository's code, model weights, or datasets; this snapshot does not include a comprehensive software license declaration.
+This repository does not include a comprehensive software license declaration. Paper citations are available in [CITATION.bib](CITATION.bib).
