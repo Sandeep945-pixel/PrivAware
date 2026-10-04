@@ -1,5 +1,33 @@
 # Architecture and control boundaries
 
+## Research architecture
+
+![PrivAware research architecture connecting user roles, retrieved access rules, a masked Flan-T5 model, response validation, database access, and reinforcement learning](../assets/figures/privaware-research-architecture.png)
+
+*Research architecture supplied by the project team. The figure labels query generation as SQL; the checked-in implementation generates MongoDB filters and projections. Training and reinforcement-learning components shown here are outside the available source snapshot.*
+
+## Available inference workflow
+
+```mermaid
+flowchart TD
+    Q["Question and token role"] --> P["Role-policy retrieval"]
+    RULES["Markdown policies and FAISS index"] --> P
+    P --> M["Token-level attention mask"]
+    Q --> M
+    M --> G["Local sequence-to-sequence generation"]
+    G --> S["GPT-4 response sanitization"]
+    P --> S
+    S --> B["GPT-4 query proposal"]
+    B --> F["Allowed-field projection filter"]
+    P --> F
+    F --> DB["MongoDB lookup"]
+    DB --> R["Placeholder replacement"]
+    S --> R
+    R --> A["Final answer"]
+```
+
+*This flow follows the checked-in code. The sections below describe its implementation and control boundaries.*
+
 ## Authentication and role context
 
 The FastAPI application exposes signup and login endpoints. Login issues an HS256 token containing the username and role. The question endpoint reads those claims and prefixes the question with the role before generation.

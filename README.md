@@ -12,27 +12,13 @@ A natural-language interface to structured records must distinguish what a user 
 
 PrivAware investigates these controls at several stages of a question-answering workflow. The repository includes demonstration policies for **Admin**, **Doctor**, and **Patient** roles. These are experimental policies, not a universal definition of clinical access rights.
 
-## Architecture
+## Methodology
 
-```mermaid
-flowchart TD
-    Q["Question and token role"] --> P["Role-policy retrieval"]
-    RULES["Markdown policies and FAISS index"] --> P
-    P --> M["Token-level attention mask"]
-    Q --> M
-    M --> G["Local sequence-to-sequence generation"]
-    G --> S["GPT-4 response sanitization"]
-    P --> S
-    S --> B["GPT-4 query proposal"]
-    B --> F["Allowed-field projection filter"]
-    P --> F
-    F --> DB["MongoDB lookup"]
-    DB --> R["Placeholder replacement"]
-    S --> R
-    R --> A["Final answer"]
-```
+![PrivAware four-stage methodology: fine-tuning, policy retrieval and attention masking, response validation, and human-feedback reinforcement learning](assets/figures/privaware-methodology.png)
 
-*This diagram describes the checked-in inference path. It is not a reproduction of a paper figure.*
+*Research methodology supplied by the project team. The figure includes training and human-feedback stages; their code and artifacts are not included in this repository.*
+
+## Implementation overview
 
 | Layer | Implementation |
 | --- | --- |
