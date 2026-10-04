@@ -6,10 +6,6 @@ PrivAware explores how access policies can influence both language generation an
 
 [Related paper — ICISSP 2026](https://doi.org/10.5220/0014218400004061) · [Architecture](docs/ARCHITECTURE.md) · [Setup and artifacts](docs/SETUP.md) · [Research notes](docs/RESEARCH.md)
 
-## Contribution
-
-Sandeep Kalari contributed research guidance and project support to this collaborative project.
-
 ## The problem
 
 A natural-language interface to structured records must distinguish what a user asks from what that user is permitted to access. A plausible answer is not sufficient: the system also needs to constrain which fields it queries and which values it returns.
